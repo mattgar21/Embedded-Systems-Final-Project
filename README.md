@@ -1,3 +1,11 @@
+Texas Tech University Embeded Systems Capstone Project
+This project will monitor the voltage and current usage of two devices and display them on a web dashboard.
+
+
+
+
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
