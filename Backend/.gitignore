@@ -1,0 +1,30 @@
+# --- Python virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Python cache / compiled files ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# --- Distribution / packaging ---
+build/
+dist/
+*.egg-info/
+*.egg
+
+# --- IDE / editor files ---
+.vscode/
+.idea/
+*.swp
+
+# --- Logs / misc ---
+*.log
+*.tmp
+*.bak
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
