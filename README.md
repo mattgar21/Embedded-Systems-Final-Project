@@ -3,6 +3,8 @@ This project will monitor the voltage and current usage of two devices and displ
 
 
 
+Block diagram of project
+<img width="908" height="837" alt="image" src="https://github.com/user-attachments/assets/1907e6de-595e-43c5-88a8-b479f29fca1a" />
 
 
 
