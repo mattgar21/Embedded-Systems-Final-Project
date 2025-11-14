@@ -1,0 +1,38 @@
+
+enum states{Init,Wait,Send}state;
+unsigned char voltage;
+unsigned char current;
+
+
+/*void Estate() {
+  switch(state){
+    case Init:
+        SerialPort.begin(9600);    //ESP32
+
+    case Wait:
+      if(!data){
+        state = Wait;
+      }else {
+        state= Send;
+      }
+
+    case Send:
+      //SerialPort.print(voltage, 3);
+      //SerialPort.print(",");
+      //SerialPort.println(current, 3);
+      SerialPort.print("Hi Mat");
+
+      state=wait;
+  }
+}*/
+
+int main() {
+  //Estate();
+  Serial.begin(115200);    //ESP32
+
+  while(1){
+    Serial.print("Hi Mat");
+    delay(500);
+  }
+  return 0;
+}
