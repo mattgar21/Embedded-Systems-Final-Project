@@ -209,13 +209,6 @@ export default function MainScreen() {
           }}
         >
           <FormControlLabel
-<<<<<<< HEAD
-            control={<MaterialUISwitch sx={{ m: 1 }} defaultChecked />}
-            label="USB C port 1"
-          />
-          <FormControlLabel
-            control={<MaterialUISwitch sx={{ m: 1 }} defaultChecked />}
-=======
             control={
               <MaterialUISwitch
                 sx={{ m: 1 }}
@@ -234,7 +227,6 @@ export default function MainScreen() {
                 onChange={(e) => sendSwitchState(2, e.target.checked)}
               />
             }
->>>>>>> 8b3bb46dd279b3d4bd474cb67449fe38ffaedb2f
             label="USB C port 2"
           />
         </Paper>
