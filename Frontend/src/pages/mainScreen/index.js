@@ -6,6 +6,34 @@ import { styled } from "@mui/material/styles";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
+<<<<<<< HEAD
+=======
+//route used to hit flask backend
+//Change api to represent your backend location
+const API = "http://localhost:5000";
+
+//This is used to send if the front end switch is on or off
+async function sendSwitchState(port, state) {
+  try {
+    const response = await fetch("http://localhost:5000/api/switch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        port: port,
+        state: state,
+      }),
+    });
+
+    const data = await response.json();
+    console.log("Backend response:", data);
+  } catch (err) {
+    console.error("Error sending switch state:", err);
+  }
+}
+
+>>>>>>> 8b3bb46dd279b3d4bd474cb67449fe38ffaedb2f
 const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   width: 62,
   height: 34,
@@ -181,11 +209,32 @@ export default function MainScreen() {
           }}
         >
           <FormControlLabel
+<<<<<<< HEAD
             control={<MaterialUISwitch sx={{ m: 1 }} defaultChecked />}
             label="USB C port 1"
           />
           <FormControlLabel
             control={<MaterialUISwitch sx={{ m: 1 }} defaultChecked />}
+=======
+            control={
+              <MaterialUISwitch
+                sx={{ m: 1 }}
+                defaultChecked
+                onChange={(e) => sendSwitchState(1, e.target.checked)}
+              />
+            }
+            label="USB C port 1"
+          />
+
+          <FormControlLabel
+            control={
+              <MaterialUISwitch
+                sx={{ m: 1 }}
+                defaultChecked
+                onChange={(e) => sendSwitchState(2, e.target.checked)}
+              />
+            }
+>>>>>>> 8b3bb46dd279b3d4bd474cb67449fe38ffaedb2f
             label="USB C port 2"
           />
         </Paper>
