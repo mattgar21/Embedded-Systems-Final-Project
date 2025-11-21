@@ -8,7 +8,7 @@ app = Flask(__name__)
 def esp_ping():
 
     data = request.get_json(silent=True) or {}
-    print("ESP32 said:", data)  # you'll see this in the Pi terminal
+    print("ESP32:", data)  
     return jsonify({"ok": True, "received": data})
 
 if __name__ == "__main__":
