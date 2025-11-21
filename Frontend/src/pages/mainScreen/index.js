@@ -7,6 +7,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
 //route used to hit flask backend
+//Change api to represent your backend location
 const API = "http://localhost:5000";
 
 //This is used to send if the front end switch is on or off
