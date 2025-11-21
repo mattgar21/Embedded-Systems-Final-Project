@@ -70,6 +70,21 @@ def get_data():
     ]
     return jsonify(results)
 
+#This route is used to check if the front end switch is on or off
+@app.route("/api/switch", methods=["POST"])
+def update_switch():
+    data = request.get_json()
+
+    port = data.get("port")
+    state = data.get("state")  # True / False
+
+    print(f"Switch update: Port {port} is now {'ON' if state else 'OFF'}")
+
+    # TODO: Handle your Pi hardware logic here
+
+    return jsonify({"success": True, "port": port, "state": state})
+
+
 
 if __name__ == "__main__":
     init_db()
