@@ -2,8 +2,11 @@ from flask import Flask, request, jsonify
 import sqlite3
 from datetime import datetime
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
 DB_PATH = "data.db"
 
 #initalize db
@@ -70,19 +73,19 @@ def get_data():
     ]
     return jsonify(results)
 
-#This route is used to check if the front end switch is on or off
-@app.route("/api/switch", methods=["POST"])
+@app.route("/api/switch", methods=["POST", "OPTIONS"])
 def update_switch():
+    if request.method == "OPTIONS":
+        return jsonify({"status": "OK"}), 200
+
     data = request.get_json()
-
     port = data.get("port")
-    state = data.get("state")  # True / False
+    state = data.get("state")
 
-    print(f"Switch update: Port {port} is now {'ON' if state else 'OFF'}")
+    print(f"Switch update: Port {port} is now {'OFF' if state else 'ON'}")
 
-    # TODO: Handle your Pi hardware logic here
+    return jsonify({"success": True})
 
-    return jsonify({"success": True, "port": port, "state": state})
 
 
 
