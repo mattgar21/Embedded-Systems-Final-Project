@@ -18,17 +18,11 @@ unsigned long sampleCount = 0;
 unsigned long lastSample = 0;
 const unsigned long sampleInterval = 667; // ~1.5kHz polling rate
 
-
-
-// ---------------------------------------------------------------------------
-// STATE MACHINE FUNCTION
-// ---------------------------------------------------------------------------
 void vState() {
   switch (state) {
 
-    // ------------------ STATE 1: INITIALIZE ------------------
     case S1_INIT: {
-      Serial.println("Connecting to INA219...");
+      Serial.println("Connecting to INA219.");
 
       if (!ina219.begin()) {
         Serial.println("Can't connect to INA219!");
@@ -41,7 +35,6 @@ void vState() {
       break;
     }
 
-    // ------------------ STATE 2: READ / AVERAGE ------------------
     case S2_READ: {
       unsigned long now = micros();
 
@@ -62,16 +55,15 @@ void vState() {
         float avgVolt = voltSum / sampleCount;
         float avgCurrent = currentSum / sampleCount;
 
-        Serial.println("---- AVERAGED DATA ----");
+        Serial.println("AVERAGED DATA");
         Serial.print("Avg Voltage: ");
         Serial.print(avgVolt, 3);
         Serial.println(" V");
         Serial.print("Avg Current: ");
         Serial.print(avgCurrent, 3);
         Serial.println(" mA");
-        Serial.println("-----------------------");
 
-        // Update global vars for other states or subsystems
+        // Update global vars for other state machines
         volt = avgVolt;
         current = avgCurrent;
 
@@ -87,9 +79,8 @@ void vState() {
       break;
     }
 
-    // ------------------ STATE 3: WAIT ------------------
     case S3_WAIT: {
-      delay(1000);  // 1 second wait (simulate idle or cooldown)
+      delay(1000);  // 1 second wait 
       state = S2_READ;
       break;
     }
@@ -97,12 +88,9 @@ void vState() {
   } // end switch
 }
 
-// ---------------------------------------------------------------------------
-// STANDARD ARDUINO ENTRY POINTS FOR STM32
-// ---------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {;}  // Wait for terminal connection (optional)
+  while (!Serial) {;}  // Wait for terminal connection
   Serial.println("STM32 Nucleo F401RE + INA219 test");
   state = S1_INIT;
 }
