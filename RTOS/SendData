@@ -4,7 +4,7 @@ unsigned char voltage;
 unsigned char current;
 
 
-/*void Estate() {
+void Estate() {
   switch(state){
     case Init:
         SerialPort.begin(9600);    //ESP32
@@ -17,14 +17,13 @@ unsigned char current;
       }
 
     case Send:
-      //SerialPort.print(voltage, 3);
-      //SerialPort.print(",");
-      //SerialPort.println(current, 3);
-      SerialPort.print("Hi Mat");
+      SerialPort.print(voltage, 3);
+      SerialPort.print(",");
+      SerialPort.println(current, 3);
 
       state=wait;
   }
-}*/
+}
 
 int main() {
   //Estate();
