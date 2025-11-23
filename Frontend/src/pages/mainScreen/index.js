@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
@@ -6,22 +7,16 @@ import { styled } from "@mui/material/styles";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
-//route used to hit flask backend
-//Change api to represent your backend location
-const API = "http://localhost:5000";
+// route used to hit flask backend
+const API = "http://75.111.158.121:5000";
 
-//This is used to send if the front end switch is on or off
+// send switch state to backend
 async function sendSwitchState(port, state) {
   try {
-    const response = await fetch("http://localhost:5000/api/switch", {
+    const response = await fetch(`${API}/api/switch`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        port: port,
-        state: state,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ port, state }),
     });
 
     const data = await response.json();
@@ -31,6 +26,7 @@ async function sendSwitchState(port, state) {
   }
 }
 
+// ⭐ RESTORED FULL MATERIAL UI SWITCH YOU HAD BEFORE ⭐
 const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   width: 62,
   height: 34,
@@ -88,6 +84,65 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
 }));
 
 export default function MainScreen() {
+  const [chartData, setChartData] = useState({
+    timestamps: [],
+    s1Current: [],
+    s2Current: [],
+    s1Voltage: [],
+    s2Voltage: [],
+  });
+
+  const [latest, setLatest] = useState(null);
+
+  // Fetch last 24 hours
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const res = await fetch(`${API}/api/data?hours=24`);
+        const json = await res.json();
+
+        const timestamps = [];
+        const s1Current = [];
+        const s2Current = [];
+        const s1Voltage = [];
+        const s2Voltage = [];
+
+        json.forEach((row) => {
+          timestamps.push(new Date(`${row.date}T${row.time}`));
+          s1Current.push(row.s1_current);
+          s2Current.push(row.s2_current);
+          s1Voltage.push(row.s1_voltage);
+          s2Voltage.push(row.s2_voltage);
+        });
+
+        setChartData({
+          timestamps,
+          s1Current,
+          s2Current,
+          s1Voltage,
+          s2Voltage,
+        });
+
+        if (json.length > 0) setLatest(json[json.length - 1]);
+        else setLatest(null);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
+
+    fetchData();
+    const id = setInterval(fetchData, 5000);
+    return () => clearInterval(id);
+  }, []);
+
+  const latestS1Text = latest
+    ? `${latest.s1_current.toFixed(2)} mA @ ${latest.s1_voltage.toFixed(2)} V`
+    : "No data";
+
+  const latestS2Text = latest
+    ? `${latest.s2_current.toFixed(2)} mA @ ${latest.s2_voltage.toFixed(2)} V`
+    : "No data";
+
   return (
     <Box
       sx={{
@@ -99,7 +154,6 @@ export default function MainScreen() {
         p: 4,
       }}
     >
-      {/* Main horizontal layout: graphs on left, switches on right */}
       <Box
         sx={{
           display: "flex",
@@ -111,19 +165,12 @@ export default function MainScreen() {
         {/* Left side: Graphs */}
         <Box
           sx={{
-            width: 800, // natural (unscaled) layout width
+            width: 800,
             transform: "scale(1.2)",
             transformOrigin: "top left",
           }}
         >
-          {/* Row for Sensor 1 and Sensor 2 */}
-          <Box
-            sx={{
-              display: "flex",
-              gap: 2,
-              mb: 2,
-            }}
-          >
+          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
             {/* Sensor 1 */}
             <Paper
               sx={{
@@ -138,8 +185,14 @@ export default function MainScreen() {
                 USB C port 1
               </Typography>
               <LineChart
-                xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-                series={[{ data: [2, 5.5, 2, 8.5, 1.5, 5] }]}
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  {
+                    data: chartData.s1Current,
+                    label: "Current (mA)",
+                    showMark: false,
+                  },
+                ]}
                 height={200}
                 width={240}
               />
@@ -159,15 +212,21 @@ export default function MainScreen() {
                 USB C port 2
               </Typography>
               <LineChart
-                xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
-                series={[{ data: [2, 5.5, 2, 8.5, 1.5, 5] }]}
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  {
+                    data: chartData.s2Current,
+                    label: "Current (mA)",
+                    showMark: false,
+                  },
+                ]}
                 height={200}
                 width={240}
               />
             </Paper>
           </Box>
 
-          {/* Combined Graph below */}
+          {/* Combined Graph */}
           <Paper
             sx={{
               p: 2,
@@ -178,14 +237,31 @@ export default function MainScreen() {
             }}
           >
             <Typography variant="h6" gutterBottom>
-              Combined Sensor Data
+              Combined Sensor Data (Last 24h)
             </Typography>
             <LineChart
-              xAxis={[{ data: [1, 2, 3, 5, 8, 10] }]}
+              xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
               series={[
-                { data: [2, 5.5, 2, 8.5, 1.5, 5], label: "Temperature (°C)" },
-                { data: [1, 3, 4.5, 7, 6, 8], label: "Humidity (%)" },
-                { data: [0.5, 2, 3.5, 5.5, 7.5, 9], label: "Pressure (kPa)" },
+                {
+                  data: chartData.s1Current,
+                  label: "S1 Current (mA)",
+                  showMark: false,
+                },
+                {
+                  data: chartData.s2Current,
+                  label: "S2 Current (mA)",
+                  showMark: false,
+                },
+                {
+                  data: chartData.s1Voltage,
+                  label: "S1 Voltage (V)",
+                  showMark: false,
+                },
+                {
+                  data: chartData.s2Voltage,
+                  label: "S2 Voltage (V)",
+                  showMark: false,
+                },
               ]}
               height={220}
               width={500}
@@ -193,7 +269,7 @@ export default function MainScreen() {
           </Paper>
         </Box>
 
-        {/* Right side: Switch panel */}
+        {/* Right side */}
         <Paper
           sx={{
             p: 3,
@@ -213,7 +289,14 @@ export default function MainScreen() {
                 onChange={(e) => sendSwitchState(1, e.target.checked)}
               />
             }
-            label="USB C port 1"
+            label={
+              <Box sx={{ display: "flex", flexDirection: "column" }}>
+                <Typography>USB C port 1</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {latestS1Text}
+                </Typography>
+              </Box>
+            }
           />
 
           <FormControlLabel
@@ -224,7 +307,14 @@ export default function MainScreen() {
                 onChange={(e) => sendSwitchState(2, e.target.checked)}
               />
             }
-            label="USB C port 2"
+            label={
+              <Box sx={{ display: "flex", flexDirection: "column" }}>
+                <Typography>USB C port 2</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {latestS2Text}
+                </Typography>
+              </Box>
+            }
           />
         </Paper>
       </Box>

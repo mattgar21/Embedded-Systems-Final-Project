@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from flask_cors import CORS
 
@@ -80,19 +80,30 @@ def receive_from_esp():
         print("Error in /api/esp/ping:", e)
         return jsonify(status="error"), 400
 
-# ---------- Endpoint to fetch last N rows ----------
+# ---------- Endpoint to fetch last 24h of data ----------
 @app.route("/api/data", methods=["GET"])
 def get_data():
+    """
+    Returns all measurements from the last 24 hours (by default).
+    You can override with ?hours=12 etc if you want later.
+    """
+    hours = float(request.args.get("hours", 24))
+
+    # Cutoff timestamp
+    cutoff_dt = datetime.now() - timedelta(hours=hours)
+    cutoff_str = cutoff_dt.strftime("%Y-%m-%d %H:%M:%S")
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    # Combine date + time in SQLite and compare as datetime
     c.execute("""
         SELECT date, time,
                s1_current, s1_voltage,
                s2_current, s2_voltage
         FROM measurements
-        ORDER BY id DESC
-        LIMIT 50
-    """)
+        WHERE datetime(date || ' ' || time) >= ?
+        ORDER BY date, time
+    """, (cutoff_str,))
     rows = c.fetchall()
     conn.close()
 
@@ -109,7 +120,36 @@ def get_data():
     ]
     return jsonify(results)
 
-# ---------- Switch endpoint (unchanged) ----------
+# ---------- Endpoint to fetch latest row ----------
+@app.route("/api/latest", methods=["GET"])
+def get_latest():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""
+        SELECT date, time,
+               s1_current, s1_voltage,
+               s2_current, s2_voltage
+        FROM measurements
+        ORDER BY id DESC
+        LIMIT 1
+    """)
+    row = c.fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({"has_data": False})
+
+    return jsonify({
+        "has_data": True,
+        "date": row[0],
+        "time": row[1],
+        "s1_current": row[2],
+        "s1_voltage": row[3],
+        "s2_current": row[4],
+        "s2_voltage": row[5],
+    })
+
+# ---------- Switch endpoint ----------
 @app.route("/api/switch", methods=["POST", "OPTIONS"])
 def update_switch():
     if request.method == "OPTIONS":
