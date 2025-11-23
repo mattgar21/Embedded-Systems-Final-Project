@@ -9,7 +9,7 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 DB_PATH = "data.db"
 
-#initalize db
+# ---------- Initialize DB ----------
 def init_db():
     if not os.path.exists(DB_PATH):
         conn = sqlite3.connect(DB_PATH)
@@ -19,15 +19,20 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date TEXT NOT NULL,
                 time TEXT NOT NULL,
-                current_measurement REAL NOT NULL,
-                voltage_measurement REAL NOT NULL
+                s1_current REAL NOT NULL,
+                s1_voltage REAL NOT NULL,
+                s2_current REAL NOT NULL,
+                s2_voltage REAL NOT NULL
             )
         """)
         conn.commit()
         conn.close()
+        print("Created new data.db with s1/s2 columns")
+    else:
+        print("Using existing data.db")
 
-#insert data into db
-def insert_measurement(current_val, voltage_val):
+# ---------- Insert one row of measurements ----------
+def insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -36,43 +41,75 @@ def insert_measurement(current_val, voltage_val):
     time_str = now.strftime("%H:%M:%S")
 
     c.execute("""
-        INSERT INTO measurements (date, time, current_measurement, voltage_measurement)
-        VALUES (?, ?, ?, ?)
-    """, (date_str, time_str, current_val, voltage_val))
+        INSERT INTO measurements (
+            date, time,
+            s1_current, s1_voltage,
+            s2_current, s2_voltage
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (date_str, time_str,
+          s1_current, s1_voltage,
+          s2_current, s2_voltage))
     conn.commit()
     conn.close()
 
+# ---------- Endpoint ESP32 posts to ----------
 @app.route("/api/esp/ping", methods=["POST"])
 def receive_from_esp():
     try:
         data = request.get_json(force=True)
-        current_val = float(data.get("current", 0.0))
-        voltage_val = float(data.get("voltage", 0.0))
+        # Expecting JSON like:
+        # {
+        #   "s1c": 123.45,
+        #   "s1v": 5.01,
+        #   "s2c": 456.78,
+        #   "s2v": 4.98
+        # }
 
-        insert_measurement(current_val, voltage_val)
+        s1_current = float(data.get("s1c", 0.0))
+        s1_voltage = float(data.get("s1v", 0.0))
+        s2_current = float(data.get("s2c", 0.0))
+        s2_voltage = float(data.get("s2v", 0.0))
+
+        print(f"ESP data -> S1: I={s1_current}mA V={s1_voltage}V | "
+              f"S2: I={s2_current}mA V={s2_voltage}V")
+
+        insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage)
         return jsonify(status="ok")
-    except:
+    except Exception as e:
+        print("Error in /api/esp/ping:", e)
         return jsonify(status="error"), 400
 
-
+# ---------- Endpoint to fetch last N rows ----------
 @app.route("/api/data", methods=["GET"])
 def get_data():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        SELECT date, time, current_measurement, voltage_measurement
+        SELECT date, time,
+               s1_current, s1_voltage,
+               s2_current, s2_voltage
         FROM measurements
-        ORDER BY id DESC LIMIT 50
+        ORDER BY id DESC
+        LIMIT 50
     """)
     rows = c.fetchall()
     conn.close()
 
     results = [
-        {"date": r[0], "time": r[1], "current": r[2], "voltage": r[3]}
+        {
+            "date": r[0],
+            "time": r[1],
+            "s1_current": r[2],
+            "s1_voltage": r[3],
+            "s2_current": r[4],
+            "s2_voltage": r[5],
+        }
         for r in rows
     ]
     return jsonify(results)
 
+# ---------- Switch endpoint (unchanged) ----------
 @app.route("/api/switch", methods=["POST", "OPTIONS"])
 def update_switch():
     if request.method == "OPTIONS":
@@ -85,9 +122,6 @@ def update_switch():
     print(f"Switch update: Port {port} is now {'OFF' if state else 'ON'}")
 
     return jsonify({"success": True})
-
-
-
 
 if __name__ == "__main__":
     init_db()

@@ -6,8 +6,6 @@ import { styled } from "@mui/material/styles";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
-<<<<<<< HEAD
-=======
 //route used to hit flask backend
 //Change api to represent your backend location
 const API = "http://localhost:5000";
@@ -33,7 +31,6 @@ async function sendSwitchState(port, state) {
   }
 }
 
->>>>>>> 8b3bb46dd279b3d4bd474cb67449fe38ffaedb2f
 const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   width: 62,
   height: 34,
