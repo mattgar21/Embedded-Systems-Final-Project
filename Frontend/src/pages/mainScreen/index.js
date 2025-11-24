@@ -8,7 +8,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
 // route used to hit flask backend
-const API = "http://75.111.158.121:5000";
+const API = "REDACTED_IP";
+
 
 // send switch state to backend
 async function sendSwitchState(port, state) {
