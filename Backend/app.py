@@ -1,20 +1,22 @@
+# Libraries 
 from flask import Flask, request, jsonify
 import sqlite3
 from datetime import datetime, timedelta
 import os
 from flask_cors import CORS
 
+# define Flask app
 app = Flask(__name__)
+# Allows for all domains to hit endpoints 
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# database and relay variables
 DB_PATH = "data.db"
-
-
 relay1_state = True
 relay2_state = True
 
 
-# ---------- Initialize DB ----------
+#  start the DB
 def init_db():
     if not os.path.exists(DB_PATH):
         conn = sqlite3.connect(DB_PATH)
@@ -37,7 +39,7 @@ def init_db():
         print("Using existing data.db")
 
 
-# ---------- Insert one row of measurements ----------
+# Add measurement to DB
 def insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -60,7 +62,7 @@ def insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage):
     conn.close()
 
 
-# ---------- Endpoint ESP32 posts sensor data to ----------
+#  Endpoint to get sensor data from ESP32 / STM
 @app.route("/api/esp/ping", methods=["POST"])
 def receive_from_esp():
     try:
@@ -78,14 +80,14 @@ def receive_from_esp():
         s2_current = float(data.get("s2c", 0.0))
         s2_voltage = float(data.get("s2v", 0.0))
 
+# Debugging statements
         print(f"ESP data -> S1: I={s1_current}mA V={s1_voltage}V | "
               f"S2: I={s2_current}mA V={s2_voltage}V")
 
         insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage)
 
-        # You *could* also return relay states here if you want the ESP
-        # to read them from the POST response.
-        from app import relay1_state, relay2_state  # noqa: F401 (for clarity)
+# Return current relay states
+        from app import relay1_state, relay2_state  
         return jsonify(
             status="ok",
             relay1=relay1_state,
@@ -99,10 +101,6 @@ def receive_from_esp():
 # ---------- Endpoint to fetch last X hours of data ----------
 @app.route("/api/data", methods=["GET"])
 def get_data():
-    """
-    Returns all measurements from the last 24 hours (by default).
-    You can override with ?hours=12 etc if you want later.
-    """
     hours = float(request.args.get("hours", 24))
 
     # Cutoff timestamp
@@ -111,7 +109,7 @@ def get_data():
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # Combine date + time in SQLite and compare as datetime
+    # Combine  data 
     c.execute("""
         SELECT date, time,
                s1_current, s1_voltage,
@@ -137,7 +135,7 @@ def get_data():
     return jsonify(results)
 
 
-# ---------- Endpoint to fetch latest row ----------
+#  Endpoint to get the latest measurement
 @app.route("/api/latest", methods=["GET"])
 def get_latest():
     conn = sqlite3.connect(DB_PATH)
@@ -167,7 +165,7 @@ def get_latest():
     })
 
 
-# ---------- Relay state API (frontend + ESP32 read from here) ----------
+# Endpoint to get current relay states
 @app.route("/api/relays", methods=["GET"])
 def get_relays():
     global relay1_state, relay2_state
@@ -177,16 +175,15 @@ def get_relays():
     })
 
 
-# ---------- Switch endpoint (frontend writes here) ----------
+# Endpoint to update relay states from frontend
 @app.route("/api/switch", methods=["POST", "OPTIONS", "GET"])
 def update_switch():
     global relay1_state, relay2_state
 
-    # CORS preflight
     if request.method == "OPTIONS":
         return jsonify({"status": "OK"}), 200
 
-    # Allow GET to just read current states (optional, similar to /api/relays)
+    # Returns relay states to frontend
     if request.method == "GET":
         return jsonify({
             "relay1": relay1_state,
@@ -198,12 +195,12 @@ def update_switch():
     port = data.get("port")
     state = data.get("state")
 
-    # state from React is already boolean True/False
     if port == 1:
         relay1_state = bool(state)
     elif port == 2:
         relay2_state = bool(state)
 
+    # Debugging statement
     print(
         f"Switch update from frontend -> "
         f"Relay1={relay1_state}, Relay2={relay2_state}"
@@ -216,6 +213,7 @@ def update_switch():
     })
 
 
+# Start the Flask app
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000, debug=False)
