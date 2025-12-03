@@ -32,7 +32,7 @@ task tasks[numTasks];
 
 // scheduler tick period (1 ms)
 const unsigned long basePeriod_ms = 1;      
-const unsigned long SensorPeriod_ms = 10; 
+const unsigned long SensorPeriod_ms = 1; 
 
 // global variables for sensor data
 float S1v = 0.0f, S1c = 0.0f, S2v = 0.0f, S2c = 0.0f;
