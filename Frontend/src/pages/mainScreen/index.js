@@ -1,3 +1,4 @@
+// Imports
 import { useEffect, useState } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
 import Box from "@mui/material/Box";
@@ -7,8 +8,10 @@ import { styled } from "@mui/material/styles";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
-const API = "http://75.111.158.121:5000";
+// This is the route to hit the backend API
+const API = "Please Add Your Backend API URL Here";
 
+// Function to send switch state to backend
 async function sendSwitchState(port, state) {
   try {
     const response = await fetch(`${API}/api/switch`, {
@@ -22,6 +25,7 @@ async function sendSwitchState(port, state) {
   }
 }
 
+// This is a custom styled switch component from MUI
 const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   width: 62,
   height: 34,
@@ -78,8 +82,8 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   },
 }));
 
-
 export default function MainScreen() {
+  // Costant for chart data
   const [chartData, setChartData] = useState({
     timestamps: [],
     s1Current: [],
@@ -89,9 +93,11 @@ export default function MainScreen() {
   });
 
   const [latest, setLatest] = useState(null);
+  // Relay states
   const [relay1, setRelay1] = useState(false);
   const [relay2, setRelay2] = useState(false);
 
+  // Grabs data from backend every 5 seconds
   useEffect(() => {
     async function fetchData() {
       try {
@@ -148,6 +154,7 @@ export default function MainScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Latest readings text
   const latestS1Text = latest
     ? `${latest.s1_current.toFixed(2)} mA @ ${latest.s1_voltage.toFixed(2)} V`
     : "No data";
@@ -156,6 +163,7 @@ export default function MainScreen() {
     ? `${latest.s2_current.toFixed(2)} mA @ ${latest.s2_voltage.toFixed(2)} V`
     : "No data";
 
+  // Render the main screen
   return (
     <Box
       sx={{
@@ -172,44 +180,158 @@ export default function MainScreen() {
           justifyContent: "space-between",
         }}
       >
-        <Box sx={{ width: 900, transform: "scale(1.1)", transformOrigin: "top left" }}>
+        <Box
+          sx={{
+            width: 900,
+            transform: "scale(1.1)",
+            transformOrigin: "top left",
+          }}
+        >
           <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+            {/* Port 1 Current Chart */}
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6">Port 1 Current</Typography>
-              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s1Current, label: "mA", showMark: false }]} height={200} width={260} />
+              <LineChart
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  { data: chartData.s1Current, label: "mA", showMark: false },
+                ]}
+                height={200}
+                width={260}
+              />
             </Paper>
 
-            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+            {/* Port 2 Current Chart */}
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6">Port 2 Current</Typography>
-              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s2Current, label: "mA", showMark: false }]} height={200} width={260} />
+              <LineChart
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  { data: chartData.s2Current, label: "mA", showMark: false },
+                ]}
+                height={200}
+                width={260}
+              />
             </Paper>
 
-            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+            {/* Combined Current Chart */}
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6">Current Combined</Typography>
-              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[
-                { data: chartData.s1Current, label: "Port 1 (mA)", showMark: false },
-                { data: chartData.s2Current, label: "Port 2 (mA)", showMark: false },
-              ]} height={200} width={260} />
+              <LineChart
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  {
+                    data: chartData.s1Current,
+                    label: "Port 1 (mA)",
+                    showMark: false,
+                  },
+                  {
+                    data: chartData.s2Current,
+                    label: "Port 2 (mA)",
+                    showMark: false,
+                  },
+                ]}
+                height={200}
+                width={260}
+              />
             </Paper>
           </Box>
 
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+            {/* Port 1 Voltage Chart */}
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6">Port 1 Voltage</Typography>
-              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s1Voltage, label: "V", showMark: false }]} height={200} width={260} />
+              <LineChart
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  { data: chartData.s1Voltage, label: "V", showMark: false },
+                ]}
+                height={200}
+                width={260}
+              />
             </Paper>
 
-            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+            {/* Port 2 Voltage Chart */}
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6">Port 2 Voltage</Typography>
-              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s2Voltage, label: "V", showMark: false }]} height={200} width={260} />
+              <LineChart
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  { data: chartData.s2Voltage, label: "V", showMark: false },
+                ]}
+                height={200}
+                width={260}
+              />
             </Paper>
 
-            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+            {/* Combined Voltage Chart */}
+            <Paper
+              sx={{
+                p: 2,
+                flex: 1,
+                alignItems: "center",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
               <Typography variant="h6">Voltage Combined</Typography>
-              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[
-                { data: chartData.s1Voltage, label: "Port 1 (V)", showMark: false },
-                { data: chartData.s2Voltage, label: "Port 2 (V)", showMark: false },
-              ]} height={200} width={260} />
+              <LineChart
+                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
+                series={[
+                  {
+                    data: chartData.s1Voltage,
+                    label: "Port 1 (V)",
+                    showMark: false,
+                  },
+                  {
+                    data: chartData.s2Voltage,
+                    label: "Port 2 (V)",
+                    showMark: false,
+                  },
+                ]}
+                height={200}
+                width={260}
+              />
             </Paper>
           </Box>
         </Box>
@@ -227,6 +349,7 @@ export default function MainScreen() {
         >
           <FormControlLabel
             control={
+              // Switch for Relay 1
               <MaterialUISwitch
                 sx={{ m: 1 }}
                 checked={relay1}
@@ -239,6 +362,7 @@ export default function MainScreen() {
             }
             label={
               <Box sx={{ display: "flex", flexDirection: "column" }}>
+                {/* Shows port 1 data */}
                 <Typography>USB C port 1</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {latestS1Text}
@@ -249,6 +373,7 @@ export default function MainScreen() {
 
           <FormControlLabel
             control={
+              // Switch for Relay 2
               <MaterialUISwitch
                 sx={{ m: 1 }}
                 checked={relay2}
@@ -261,6 +386,7 @@ export default function MainScreen() {
             }
             label={
               <Box sx={{ display: "flex", flexDirection: "column" }}>
+                {/* Shows port 2 data */}
                 <Typography>USB C port 2</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {latestS2Text}
