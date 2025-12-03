@@ -7,11 +7,8 @@ import { styled } from "@mui/material/styles";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Switch from "@mui/material/Switch";
 
-// route used to hit flask backend
-const API = "REDACTED_IP";
+const API = "http://75.111.158.121:5000";
 
-
-// send switch state to backend
 async function sendSwitchState(port, state) {
   try {
     const response = await fetch(`${API}/api/switch`, {
@@ -19,15 +16,12 @@ async function sendSwitchState(port, state) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ port, state }),
     });
-
-    const data = await response.json();
-    console.log("Backend response:", data);
+    await response.json();
   } catch (err) {
     console.error("Error sending switch state:", err);
   }
 }
 
-// ⭐ RESTORED FULL MATERIAL UI SWITCH YOU HAD BEFORE ⭐
 const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   width: 62,
   height: 34,
@@ -84,6 +78,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
   },
 }));
 
+
 export default function MainScreen() {
   const [chartData, setChartData] = useState({
     timestamps: [],
@@ -94,8 +89,9 @@ export default function MainScreen() {
   });
 
   const [latest, setLatest] = useState(null);
+  const [relay1, setRelay1] = useState(false);
+  const [relay2, setRelay2] = useState(false);
 
-  // Fetch last 24 hours
   useEffect(() => {
     async function fetchData() {
       try {
@@ -131,8 +127,24 @@ export default function MainScreen() {
       }
     }
 
-    fetchData();
-    const id = setInterval(fetchData, 5000);
+    async function fetchRelayState() {
+      try {
+        const res = await fetch(`${API}/api/relays`);
+        const json = await res.json();
+        setRelay1(!json.relay1);
+        setRelay2(!json.relay2);
+      } catch (err) {
+        console.error("Error fetching relay state:", err);
+      }
+    }
+
+    async function fetchAll() {
+      await fetchData();
+      await fetchRelayState();
+    }
+
+    fetchAll();
+    const id = setInterval(fetchAll, 5000);
     return () => clearInterval(id);
   }, []);
 
@@ -150,132 +162,63 @@ export default function MainScreen() {
         minHeight: "100vh",
         backgroundColor: "#272727ff",
         display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "flex-start",
         p: 4,
       }}
     >
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
           width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
         }}
       >
-        {/* Left side: Graphs */}
-        <Box
-          sx={{
-            width: 800,
-            transform: "scale(1.2)",
-            transformOrigin: "top left",
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-            {/* Sensor 1 */}
-            <Paper
-              sx={{
-                p: 2,
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                USB C port 1
-              </Typography>
-              <LineChart
-                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
-                series={[
-                  {
-                    data: chartData.s1Current,
-                    label: "Current (mA)",
-                    showMark: false,
-                  },
-                ]}
-                height={200}
-                width={240}
-              />
+        <Box sx={{ width: 900, transform: "scale(1.1)", transformOrigin: "top left" }}>
+          <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
+            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+              <Typography variant="h6">Port 1 Current</Typography>
+              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s1Current, label: "mA", showMark: false }]} height={200} width={260} />
             </Paper>
 
-            {/* Sensor 2 */}
-            <Paper
-              sx={{
-                p: 2,
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                USB C port 2
-              </Typography>
-              <LineChart
-                xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
-                series={[
-                  {
-                    data: chartData.s2Current,
-                    label: "Current (mA)",
-                    showMark: false,
-                  },
-                ]}
-                height={200}
-                width={240}
-              />
+            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+              <Typography variant="h6">Port 2 Current</Typography>
+              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s2Current, label: "mA", showMark: false }]} height={200} width={260} />
+            </Paper>
+
+            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+              <Typography variant="h6">Current Combined</Typography>
+              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[
+                { data: chartData.s1Current, label: "Port 1 (mA)", showMark: false },
+                { data: chartData.s2Current, label: "Port 2 (mA)", showMark: false },
+              ]} height={200} width={260} />
             </Paper>
           </Box>
 
-          {/* Combined Graph */}
-          <Paper
-            sx={{
-              p: 2,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6" gutterBottom>
-              Combined Sensor Data (Last 24h)
-            </Typography>
-            <LineChart
-              xAxis={[{ data: chartData.timestamps, scaleType: "time" }]}
-              series={[
-                {
-                  data: chartData.s1Current,
-                  label: "S1 Current (mA)",
-                  showMark: false,
-                },
-                {
-                  data: chartData.s2Current,
-                  label: "S2 Current (mA)",
-                  showMark: false,
-                },
-                {
-                  data: chartData.s1Voltage,
-                  label: "S1 Voltage (V)",
-                  showMark: false,
-                },
-                {
-                  data: chartData.s2Voltage,
-                  label: "S2 Voltage (V)",
-                  showMark: false,
-                },
-              ]}
-              height={220}
-              width={500}
-            />
-          </Paper>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+              <Typography variant="h6">Port 1 Voltage</Typography>
+              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s1Voltage, label: "V", showMark: false }]} height={200} width={260} />
+            </Paper>
+
+            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+              <Typography variant="h6">Port 2 Voltage</Typography>
+              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[{ data: chartData.s2Voltage, label: "V", showMark: false }]} height={200} width={260} />
+            </Paper>
+
+            <Paper sx={{ p: 2, flex: 1, alignItems: "center", display: "flex", flexDirection: "column" }}>
+              <Typography variant="h6">Voltage Combined</Typography>
+              <LineChart xAxis={[{ data: chartData.timestamps, scaleType: "time" }]} series={[
+                { data: chartData.s1Voltage, label: "Port 1 (V)", showMark: false },
+                { data: chartData.s2Voltage, label: "Port 2 (V)", showMark: false },
+              ]} height={200} width={260} />
+            </Paper>
+          </Box>
         </Box>
 
-        {/* Right side */}
         <Paper
           sx={{
             p: 3,
             ml: 4,
-            minWidth: 250,
+            minWidth: 260,
             height: "fit-content",
             display: "flex",
             flexDirection: "column",
@@ -286,8 +229,12 @@ export default function MainScreen() {
             control={
               <MaterialUISwitch
                 sx={{ m: 1 }}
-                defaultChecked
-                onChange={(e) => sendSwitchState(1, e.target.checked)}
+                checked={relay1}
+                onChange={(e) => {
+                  const uiState = e.target.checked;
+                  setRelay1(uiState);
+                  sendSwitchState(1, !uiState);
+                }}
               />
             }
             label={
@@ -304,8 +251,12 @@ export default function MainScreen() {
             control={
               <MaterialUISwitch
                 sx={{ m: 1 }}
-                defaultChecked
-                onChange={(e) => sendSwitchState(2, e.target.checked)}
+                checked={relay2}
+                onChange={(e) => {
+                  const uiState = e.target.checked;
+                  setRelay2(uiState);
+                  sendSwitchState(2, !uiState);
+                }}
               />
             }
             label={

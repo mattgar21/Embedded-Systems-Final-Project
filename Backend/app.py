@@ -9,6 +9,11 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 DB_PATH = "data.db"
 
+
+relay1_state = True
+relay2_state = True
+
+
 # ---------- Initialize DB ----------
 def init_db():
     if not os.path.exists(DB_PATH):
@@ -30,6 +35,7 @@ def init_db():
         print("Created new data.db with s1/s2 columns")
     else:
         print("Using existing data.db")
+
 
 # ---------- Insert one row of measurements ----------
 def insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage):
@@ -53,7 +59,8 @@ def insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage):
     conn.commit()
     conn.close()
 
-# ---------- Endpoint ESP32 posts to ----------
+
+# ---------- Endpoint ESP32 posts sensor data to ----------
 @app.route("/api/esp/ping", methods=["POST"])
 def receive_from_esp():
     try:
@@ -75,12 +82,21 @@ def receive_from_esp():
               f"S2: I={s2_current}mA V={s2_voltage}V")
 
         insert_measurement(s1_current, s1_voltage, s2_current, s2_voltage)
-        return jsonify(status="ok")
+
+        # You *could* also return relay states here if you want the ESP
+        # to read them from the POST response.
+        from app import relay1_state, relay2_state  # noqa: F401 (for clarity)
+        return jsonify(
+            status="ok",
+            relay1=relay1_state,
+            relay2=relay2_state
+        )
     except Exception as e:
         print("Error in /api/esp/ping:", e)
         return jsonify(status="error"), 400
 
-# ---------- Endpoint to fetch last 24h of data ----------
+
+# ---------- Endpoint to fetch last X hours of data ----------
 @app.route("/api/data", methods=["GET"])
 def get_data():
     """
@@ -120,6 +136,7 @@ def get_data():
     ]
     return jsonify(results)
 
+
 # ---------- Endpoint to fetch latest row ----------
 @app.route("/api/latest", methods=["GET"])
 def get_latest():
@@ -149,19 +166,55 @@ def get_latest():
         "s2_voltage": row[5],
     })
 
-# ---------- Switch endpoint ----------
-@app.route("/api/switch", methods=["POST", "OPTIONS"])
+
+# ---------- Relay state API (frontend + ESP32 read from here) ----------
+@app.route("/api/relays", methods=["GET"])
+def get_relays():
+    global relay1_state, relay2_state
+    return jsonify({
+        "relay1": relay1_state,
+        "relay2": relay2_state,
+    })
+
+
+# ---------- Switch endpoint (frontend writes here) ----------
+@app.route("/api/switch", methods=["POST", "OPTIONS", "GET"])
 def update_switch():
+    global relay1_state, relay2_state
+
+    # CORS preflight
     if request.method == "OPTIONS":
         return jsonify({"status": "OK"}), 200
 
+    # Allow GET to just read current states (optional, similar to /api/relays)
+    if request.method == "GET":
+        return jsonify({
+            "relay1": relay1_state,
+            "relay2": relay2_state,
+        })
+
+    # POST from frontend
     data = request.get_json()
     port = data.get("port")
     state = data.get("state")
 
-    print(f"Switch update: Port {port} is now {'OFF' if state else 'ON'}")
+    # state from React is already boolean True/False
+    if port == 1:
+        relay1_state = bool(state)
+    elif port == 2:
+        relay2_state = bool(state)
 
-    return jsonify({"success": True})
+    print(
+        f"Switch update from frontend -> "
+        f"Relay1={relay1_state}, Relay2={relay2_state}"
+    )
+
+    return jsonify({
+        "success": True,
+        "relay1": relay1_state,
+        "relay2": relay2_state,
+    })
+
 
 if __name__ == "__main__":
     init_db()
